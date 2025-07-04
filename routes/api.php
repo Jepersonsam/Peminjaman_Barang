@@ -9,6 +9,8 @@ use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserControllerApi;
 use App\Http\Controllers\ItemControllerApi;
 use App\Http\Controllers\BorrowingControllerApi;
+use App\Http\Controllers\RoomControllerApi;
+use App\Http\Controllers\RoomLoanControllerApi;
 
 
 
@@ -86,3 +88,15 @@ Route::get('/public/items', [ItemControllerApi::class, 'publicIndex']);
 Route::post('/public/borrowings', [BorrowingControllerApi::class, 'publicStore']);
 Route::get('/users/by-code/{code}', [UserControllerApi::class, 'getByCode']);
 Route::post('/public/return-item', [BorrowingControllerApi::class, 'returnItem']);
+
+Route::get('rooms', [RoomControllerApi::class, 'index']);
+Route::post('rooms',[RoomControllerApi::class, 'store']);
+Route::get('rooms/{id}', [RoomControllerApi::class, 'show']);
+Route::put('rooms/{id}', [RoomControllerApi::class, 'update']);
+Route::delete('rooms/{id}', [RoomControllerApi::class, 'destroy']);
+
+Route::get('room-loans', [RoomLoanControllerApi::class, 'index']);
+Route::post('room-loans', [RoomLoanControllerApi::class, 'store']);
+Route::get('room-loans/{id}', [RoomLoanControllerApi::class, 'show']);
+Route::put('room-loans/{id}', [RoomLoanControllerApi::class, 'update']);
+Route::delete('room-loans/{id}', [RoomLoanControllerApi::class, 'destroy']);
