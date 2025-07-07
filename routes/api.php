@@ -11,6 +11,7 @@ use App\Http\Controllers\ItemControllerApi;
 use App\Http\Controllers\BorrowingControllerApi;
 use App\Http\Controllers\RoomControllerApi;
 use App\Http\Controllers\RoomLoanControllerApi;
+use App\Http\Controllers\LocationController;
 
 
 
@@ -83,6 +84,11 @@ Route::middleware('auth:api')->group(function () {
     });
 });
 
+
+
+Route::get('/room-loans/check-availability', [RoomLoanControllerApi::class, 'checkAvailability']);
+
+
 // Public route untuk peminjaman tanpa login
 Route::get('/public/items', [ItemControllerApi::class, 'publicIndex']);
 Route::post('/public/borrowings', [BorrowingControllerApi::class, 'publicStore']);
@@ -100,3 +106,12 @@ Route::post('room-loans', [RoomLoanControllerApi::class, 'store']);
 Route::get('room-loans/{id}', [RoomLoanControllerApi::class, 'show']);
 Route::put('room-loans/{id}', [RoomLoanControllerApi::class, 'update']);
 Route::delete('room-loans/{id}', [RoomLoanControllerApi::class, 'destroy']);
+
+
+
+Route::get('/locations', [LocationController::class, 'index']);
+Route::post('/locations', [LocationController::class, 'store']);
+Route::get('/locations/{id}', [LocationController::class, 'show']);
+Route::delete('/locations/{id}', [LocationController::class, 'destroy']);
+
+Route::get('/validate-secret', [LocationController::class, 'validateSecret']);

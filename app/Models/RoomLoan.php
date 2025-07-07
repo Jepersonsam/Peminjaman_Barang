@@ -20,6 +20,10 @@ class RoomLoan extends Model
         'status'
     ];
 
+    protected $casts = [
+        'emails' => 'array', // ✅ Tambahkan ini
+    ];
+
     public function room()
     {
         return $this->belongsTo(Room::class);
