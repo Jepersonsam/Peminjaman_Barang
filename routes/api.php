@@ -111,6 +111,7 @@ Route::delete('room-loans/{id}', [RoomLoanControllerApi::class, 'destroy']);
 
 Route::get('/locations', [LocationController::class, 'index']);
 Route::post('/locations', [LocationController::class, 'store']);
+Route::put('/locations/{id}', [LocationController::class, 'update']);
 Route::get('/locations/{id}', [LocationController::class, 'show']);
 Route::delete('/locations/{id}', [LocationController::class, 'destroy']);
 

@@ -34,6 +34,23 @@ class LocationController extends Controller
         ]);
     }
 
+    // Update lokasi
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+        ]);
+
+        $location = Location::findOrFail($id);
+        $location->name = $request->name;
+        $location->save();
+
+        return response()->json([
+            'message' => 'Lokasi berhasil diperbarui',
+            'data' => $location
+        ]);
+    }
+
     // Validasi secret ID dari frontend
     public function validateSecret(Request $request)
     {
