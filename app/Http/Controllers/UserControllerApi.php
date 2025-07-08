@@ -8,7 +8,6 @@ use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
-use Spatie\Permission\Models\Role;
 
 class UserControllerApi extends Controller
 {
@@ -23,18 +22,20 @@ class UserControllerApi extends Controller
         $user = User::create([
             'name'     => $request->name,
             'email'    => $request->email,
-            'password' => Hash::make($request->password),
+            'phone'    => $request->phone, // 🟢 Tambah phone
             'code'     => $request->code,
+            'password' => Hash::make($request->password),
         ]);
 
         if ($request->has('roles')) {
-            $user->syncRoles($request->roles); // Berfungsi dengan Spatie
+            $user->syncRoles($request->roles);
         }
 
-        return response()->json(['message' => 'User created', 'user' => $user->load('roles')]);
+        return response()->json([
+            'message' => 'User created',
+            'user' => $user->load('roles')
+        ]);
     }
-
-
 
     public function show($id)
     {
@@ -47,9 +48,10 @@ class UserControllerApi extends Controller
         $user = User::findOrFail($id);
 
         $user->update([
-            'name' => $request->name,
+            'name'  => $request->name,
             'email' => $request->email,
-            'code' => $request->code,
+            'phone' => $request->phone, // 🟢 Tambah phone
+            'code'  => $request->code,
         ]);
 
         if ($request->filled('password')) {
@@ -58,12 +60,14 @@ class UserControllerApi extends Controller
             ]);
         }
 
-
         if ($request->has('roles')) {
             $user->syncRoles($request->roles);
         }
 
-        return response()->json(['message' => 'User updated successfully', 'data' => $user->load('roles')]);
+        return response()->json([
+            'message' => 'User updated successfully',
+            'data' => $user->load('roles')
+        ]);
     }
 
     public function destroy($id)

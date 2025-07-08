@@ -85,20 +85,24 @@ class BorrowingControllerApi extends Controller
     }
 
     public function update(UpdateBorrowingRequest $request, $id): JsonResponse
-    {
-        $borrowing = Borrowing::with('item')->findOrFail($id);
-        $borrowing->update($request->validated());
+{
+    $borrowing = Borrowing::with('item')->findOrFail($id);
+    $borrowing->update($request->validated());
 
-        // Jika dikembalikan, tandai item tersedia lagi
-        if ($request->has('is_returned') && $request->is_returned) {
-            if ($borrowing->item) {
-                $borrowing->item->is_available = true;
-                $borrowing->item->save();
-            }
+    // Jika dikembalikan, tandai item tersedia lagi
+    if ($request->has('is_returned') && $request->is_returned) {
+        if ($borrowing->item) {
+            $borrowing->item->is_available = true;
+            $borrowing->item->save();
         }
-
-        return response()->json(new BorrowingResource($borrowing));
     }
+
+    // ⬅️ Tambahkan ini agar user dan item terload untuk resource
+    $borrowing->load(['user', 'item']);
+
+    return response()->json(new BorrowingResource($borrowing));
+}
+
 
 
 

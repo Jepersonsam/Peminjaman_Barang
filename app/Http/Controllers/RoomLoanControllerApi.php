@@ -42,7 +42,7 @@ class RoomLoanControllerApi extends Controller
 
         // ✅ PERBAIKAN: Periksa overlap untuk semua status kecuali 'rejected' dan 'cancelled'
         $overlap = RoomLoan::where('room_id', $request->room_id)
-            ->whereNotIn('status', ['rejected', 'cancelled']) // Exclude rejected/cancelled
+            ->where('status', 'approved') // Exclude rejected/cancelled
             ->where(function ($query) use ($request) {
                 // Kondisi 1: Start time baru berada di antara booking yang ada (tidak termasuk batas)
                 $query->where(function ($q) use ($request) {
@@ -95,7 +95,7 @@ class RoomLoanControllerApi extends Controller
 
             $overlap = RoomLoan::where('room_id', $loan->room_id)
                 ->where('id', '!=', $id) // Exclude current record
-                ->whereNotIn('status', ['rejected', 'cancelled'])
+                ->where('status', 'approved')
                 ->where(function ($query) use ($startTime, $endTime) {
                     $query->where(function ($q) use ($startTime, $endTime) {
                         $q->where('start_time', '<', $startTime)

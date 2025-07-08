@@ -26,6 +26,7 @@ class UpdateUserRequest extends FormRequest
             'email' => ['required', 'email', 'unique:users,email,' . $this->route('id')],
             'code' => ['required', 'string'],
             'password' => ['nullable', 'string', 'min:6', 'confirmed'],
+            'phone' => ['required', 'regex:/^\+62[0-9]{8,13}$/', 'unique:users,phone'],
             'roles' => ['nullable', 'array'],
             'roles.*' => ['string', 'exists:roles,name'],
         ];
