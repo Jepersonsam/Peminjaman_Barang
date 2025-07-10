@@ -24,35 +24,49 @@ class BorrowingControllerApi extends Controller
     {
         $request->validate([
             'user_code' => 'required|exists:users,code',
-            'item_id' => 'required|exists:items,id',
+            'item_ids' => 'required|array|min:1',
+            'item_ids.*' => 'exists:items,id',
             'borrow_date' => 'required|date',
             'return_date' => 'required|date|after_or_equal:borrow_date',
         ]);
 
-        // Ambil user dan item berdasarkan ID
         $user = \App\Models\User::where('code', $request->user_code)->first();
-        $item = \App\Models\Item::find($request->item_id);
 
-        if (!$item->is_available) {
-            return response()->json(['message' => 'Barang sedang tidak tersedia'], 400);
+        if (!$user) {
+            return response()->json(['message' => 'User tidak ditemukan.'], 404);
         }
 
-        // Simpan peminjaman
-        $borrowing = \App\Models\Borrowing::create([
-            'users_id' => $user->id,
-            'item_id' => $item->id,
-            'borrow_date' => $request->borrow_date,
-            'return_date' => $request->return_date,
-            'is_returned' => false,
-        ]);
+        $borrowed = [];
+        $skipped = [];
 
-        // Ubah status item menjadi tidak tersedia
-        $item->is_available = 0;
-        $item->save();
+        foreach ($request->item_ids as $itemId) {
+            $item = \App\Models\Item::find($itemId);
+
+            if (!$item || !$item->is_available || !$item->is_active) {
+                $skipped[] = $itemId;
+                continue;
+            }
+
+            $borrowing = \App\Models\Borrowing::create([
+                'users_id' => $user->id,
+                'item_id' => $item->id,
+                'borrow_date' => $request->borrow_date,
+                'return_date' => $request->return_date,
+                'is_returned' => false,
+            ]);
+
+            $item->update(['is_available' => false]);
+
+            $borrowed[] = $borrowing;
+        }
 
         return response()->json([
-            'message' => 'Peminjaman berhasil dicatat',
-            'data' => $borrowing
+            'message' => count($borrowed)
+                ? 'Peminjaman berhasil dicatat.'
+                : 'Tidak ada barang yang berhasil dipinjam.',
+            'borrowed_count' => count($borrowed),
+            'skipped_items' => $skipped,
+            'data' => $borrowed,
         ]);
     }
 
@@ -85,23 +99,23 @@ class BorrowingControllerApi extends Controller
     }
 
     public function update(UpdateBorrowingRequest $request, $id): JsonResponse
-{
-    $borrowing = Borrowing::with('item')->findOrFail($id);
-    $borrowing->update($request->validated());
+    {
+        $borrowing = Borrowing::with('item')->findOrFail($id);
+        $borrowing->update($request->validated());
 
-    // Jika dikembalikan, tandai item tersedia lagi
-    if ($request->has('is_returned') && $request->is_returned) {
-        if ($borrowing->item) {
-            $borrowing->item->is_available = true;
-            $borrowing->item->save();
+        // Jika dikembalikan, tandai item tersedia lagi
+        if ($request->has('is_returned') && $request->is_returned) {
+            if ($borrowing->item) {
+                $borrowing->item->is_available = true;
+                $borrowing->item->save();
+            }
         }
+
+        // ⬅️ Tambahkan ini agar user dan item terload untuk resource
+        $borrowing->load(['user', 'item']);
+
+        return response()->json(new BorrowingResource($borrowing));
     }
-
-    // ⬅️ Tambahkan ini agar user dan item terload untuk resource
-    $borrowing->load(['user', 'item']);
-
-    return response()->json(new BorrowingResource($borrowing));
-}
 
 
 

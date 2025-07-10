@@ -179,7 +179,6 @@ class RoomLoanControllerApi extends Controller
         // ✅ PERBAIKAN: Hanya ambil booking di tanggal yang sama
         $bookings = RoomLoan::with('room')
             ->where('room_id', $roomId)
-            ->whereDate('start_time', $date) // Hanya tanggal yang sama
             ->whereNotIn('status', ['rejected', 'cancelled']) // Exclude rejected/cancelled
             ->orderBy('start_time')
             ->get();
