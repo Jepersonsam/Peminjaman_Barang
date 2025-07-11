@@ -20,6 +20,15 @@ class BorrowingControllerApi extends Controller
         ]);
     }
 
+    public function PublicIndex(): JsonResponse
+    {
+        $borrowings = Borrowing::with(['item'])->latest()->get();
+        return response()->json([
+            'data' => BorrowingResource::collection($borrowings)
+        ]);
+    }
+    
+
     public function publicStore(Request $request)
     {
         $request->validate([

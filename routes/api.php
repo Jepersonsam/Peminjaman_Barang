@@ -116,3 +116,5 @@ Route::get('/locations/{id}', [LocationController::class, 'show']);
 Route::delete('/locations/{id}', [LocationController::class, 'destroy']);
 
 Route::get('/validate-secret', [LocationController::class, 'validateSecret']);
+
+Route::get('/borrowings', [BorrowingControllerApi::class, 'PublicIndex']);
