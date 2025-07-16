@@ -26,6 +26,7 @@ class RegisterRequest extends FormRequest
             'email'     => 'required|email|unique:users',
             'password'  => 'required|min:8|confirmed',
             'code'     => 'nullable|string|max:50',
+            'code_nfc' => 'nullable|string|max:50|unique:users,code_nfc', // 🟢 Tambah validasi untuk code_nfc
             'roles'     => 'sometimes|array',
             'roles.*'   => 'exists:roles,name',
         ];

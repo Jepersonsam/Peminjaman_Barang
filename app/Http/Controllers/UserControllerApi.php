@@ -24,6 +24,7 @@ class UserControllerApi extends Controller
             'email'    => $request->email,
             'phone'    => $request->phone, // 🟢 Tambah phone
             'code'     => $request->code,
+            'code_nfc' => $request->code_nfc, // 🟢 Tambah code_nfc
             'password' => Hash::make($request->password),
         ]);
 
@@ -43,6 +44,18 @@ class UserControllerApi extends Controller
         return response()->json(['data' => $user]);
     }
 
+    public function getByNFC($code_nfc)
+    {
+        $user = User::where('code_nfc', $code_nfc)->first();
+
+        if (!$user) {
+            return response()->json(['message' => 'Pengguna tidak ditemukan'], 404);
+        }
+
+        return response()->json(['data' => $user]);
+    }
+
+
     public function update(UpdateUserRequest $request, $id)
     {
         $user = User::findOrFail($id);
@@ -51,6 +64,7 @@ class UserControllerApi extends Controller
             'name'  => $request->name,
             'email' => $request->email,
             'phone' => $request->phone, // 🟢 Tambah phone
+            'code_nfc' => $request->code_nfc, // 🟢 Tambah code_nfc
             'code'  => $request->code,
         ]);
 

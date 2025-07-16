@@ -118,3 +118,5 @@ Route::delete('/locations/{id}', [LocationController::class, 'destroy']);
 Route::get('/validate-secret', [LocationController::class, 'validateSecret']);
 
 Route::get('/borrowings', [BorrowingControllerApi::class, 'PublicIndex']);
+
+Route::get('/users/by-nfc/{code_nfc}', [UserControllerApi::class, 'getByNFC']);

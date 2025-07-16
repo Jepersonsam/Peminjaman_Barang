@@ -25,6 +25,7 @@ class UpdateUserRequest extends FormRequest
             'name' => ['required', 'string'],
             'email' => ['required', 'email', 'unique:users,email,' . $this->route('id')],
             'code' => ['required', 'string'],
+            'code_nfc' => ['nullable', 'string', 'max:50', 'unique:users,code_nfc,' . $this->route('id')],
             'password' => ['nullable', 'string', 'min:6', 'confirmed'],
             'phone' => ['required', 'regex:/^\+62[0-9]{8,13}$/', 'unique:users,phone'],
             'roles' => ['nullable', 'array'],

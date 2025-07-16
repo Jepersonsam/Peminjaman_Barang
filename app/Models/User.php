@@ -25,6 +25,7 @@ class User extends Authenticatable
         'password',
         'phone',
         'code',
+        'code_nfc',
     ];
 
     /**

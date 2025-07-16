@@ -18,6 +18,7 @@ class ItemResource extends JsonResource
             'serial_code'  => $this->serial_code,
             'is_available' => $this->is_available,
             'is_active'    => $this->is_active,
+            'is_approval'  => $this->is_approval,
             'created_at'   => $this->created_at,
             'updated_at'   => $this->updated_at,
         ];

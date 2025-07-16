@@ -12,6 +12,7 @@ class Borrowing extends Model
         'borrow_date',
         'return_date',
         'is_returned',
+        'approval_status', 
     ];
 
     protected $casts = [

@@ -16,12 +16,14 @@ class Item extends Model
         'serial_code',
         'is_available',
         'is_active',
+        'is_approval', 
     ];
 
     // Jika ingin casting otomatis untuk boolean
     protected $casts = [
         'is_available' => 'boolean',
         'is_active' => 'boolean',
+        'is_approval' => 'boolean',
     ];
 
     /**

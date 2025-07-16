@@ -29,6 +29,7 @@ class UpdateItemRequest extends FormRequest
             'code' => ['nullable', 'string', 'max:50'],
             'is_available' => ['boolean'],
             'is_active' => ['boolean'],
+            'is_approval' => ['boolean'],
         ];
     }
 }

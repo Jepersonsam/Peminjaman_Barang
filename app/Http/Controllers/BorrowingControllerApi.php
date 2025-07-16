@@ -56,6 +56,14 @@ class BorrowingControllerApi extends Controller
                 continue;
             }
 
+            if($item->is_approval){
+                $skipped[] = [
+                    'item_id' => $itemId,
+                    'message' => 'Barang Memerlukan Persetujuan Admin.'
+                ];
+                continue;
+            }
+
             $borrowing = \App\Models\Borrowing::create([
                 'users_id' => $user->id,
                 'item_id' => $item->id,
@@ -90,6 +98,12 @@ class BorrowingControllerApi extends Controller
             return response()->json([
                 'message' => 'Item is not available for borrowing.'
             ], 400);
+        }
+
+        if ($item->is_approval) {
+            return response()->json([
+                'message' => 'Item Memerlukan Persetujuan Admin Sebelum Dapat Dipinjam.'
+            ], 403);
         }
 
         // Tandai item sebagai tidak tersedia
