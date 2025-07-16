@@ -6,6 +6,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class Borrowing extends Model
 {
+    const STATUS_PENDING = 'pending';
+    const STATUS_APPROVED = 'approved';
+    const STATUS_REJECTED = 'rejected';
+
     protected $fillable = [
         'users_id',
         'item_id',
@@ -19,6 +23,7 @@ class Borrowing extends Model
         'borrow_date' => 'date',
         'return_date' => 'date',
         'is_returned' => 'boolean',
+        'approval_status' => 'string',
     ];
 
     public function user()
@@ -30,4 +35,5 @@ class Borrowing extends Model
     {
         return $this->belongsTo(Item::class, 'item_id');
     }
+
 }

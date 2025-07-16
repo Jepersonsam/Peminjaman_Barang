@@ -27,7 +27,7 @@ class BorrowingControllerApi extends Controller
             'data' => BorrowingResource::collection($borrowings)
         ]);
     }
-    
+
 
     public function publicStore(Request $request)
     {
@@ -51,31 +51,58 @@ class BorrowingControllerApi extends Controller
         foreach ($request->item_ids as $itemId) {
             $item = \App\Models\Item::find($itemId);
 
-            if (!$item || !$item->is_available || !$item->is_active) {
-                $skipped[] = $itemId;
-                continue;
-            }
-
-            if($item->is_approval){
+            if (!$item || !$item->is_active) {
                 $skipped[] = [
                     'item_id' => $itemId,
-                    'message' => 'Barang Memerlukan Persetujuan Admin.'
+                    'message' => 'Barang tidak ditemukan atau tidak aktif.'
                 ];
                 continue;
             }
 
+            // Jika item perlu approval
+            if ($item->is_approval) {
+                $borrowing = \App\Models\Borrowing::create([
+                    'users_id' => $user->id,
+                    'item_id' => $item->id,
+                    'borrow_date' => $request->borrow_date,
+                    'return_date' => $request->return_date,
+                    'is_returned' => false,
+                    'approval_status' => 'pending', // 👈 status menunggu persetujuan
+                ]);
+
+                $skipped[] = [
+                    'item_id' => $itemId,
+                    'message' => 'Barang memerlukan persetujuan admin.'
+                ];
+
+                $borrowed[] = $borrowing; // tetap masukkan ke "borrowed" agar front-end bisa menampilkan permintaan yang berhasil dicatat
+                continue;
+            }
+
+            // Jika tidak perlu approval, tapi tidak tersedia
+            if (!$item->is_available) {
+                $skipped[] = [
+                    'item_id' => $itemId,
+                    'message' => 'Barang tidak tersedia.'
+                ];
+                continue;
+            }
+
+            // Barang bisa langsung dipinjam
             $borrowing = \App\Models\Borrowing::create([
                 'users_id' => $user->id,
                 'item_id' => $item->id,
                 'borrow_date' => $request->borrow_date,
                 'return_date' => $request->return_date,
                 'is_returned' => false,
+                'approval_status' => 'approved', // 👈 langsung disetujui
             ]);
 
             $item->update(['is_available' => false]);
 
             $borrowed[] = $borrowing;
         }
+
 
         return response()->json([
             'message' => count($borrowed)
@@ -141,8 +168,6 @@ class BorrowingControllerApi extends Controller
     }
 
 
-
-
     public function destroy($id): JsonResponse
     {
         $borrowing = Borrowing::findOrFail($id);
@@ -186,4 +211,5 @@ class BorrowingControllerApi extends Controller
             'data' => $item
         ]);
     }
+
 }

@@ -12,9 +12,7 @@ use App\Http\Controllers\BorrowingControllerApi;
 use App\Http\Controllers\RoomControllerApi;
 use App\Http\Controllers\RoomLoanControllerApi;
 use App\Http\Controllers\LocationController;
-
-
-
+use App\Http\Controllers\PublicBorrowingControllerApi;
 
 // Public routes (no authentication required)
 Route::post('/register', [RegisterControllerApi::class, 'register']);
@@ -91,7 +89,7 @@ Route::get('/room-loans/check-availability', [RoomLoanControllerApi::class, 'che
 
 // Public route untuk peminjaman tanpa login
 Route::get('/public/items', [ItemControllerApi::class, 'publicIndex']);
-Route::post('/public/borrowings', [BorrowingControllerApi::class, 'publicStore']);
+Route::post('/public/borrowings', [PublicBorrowingControllerApi::class, 'publicStore']);
 Route::get('/users/by-code/{code}', [UserControllerApi::class, 'getByCode']);
 Route::post('/public/return-item', [BorrowingControllerApi::class, 'returnItem']);
 
@@ -120,3 +118,8 @@ Route::get('/validate-secret', [LocationController::class, 'validateSecret']);
 Route::get('/borrowings', [BorrowingControllerApi::class, 'PublicIndex']);
 
 Route::get('/users/by-nfc/{code_nfc}', [UserControllerApi::class, 'getByNFC']);
+
+Route::post('/borrowings/{id}/approve', [BorrowingControllerApi::class, 'approve']);
+Route::post('/borrowings/{id}/reject', [BorrowingControllerApi::class, 'reject']);
+
+
