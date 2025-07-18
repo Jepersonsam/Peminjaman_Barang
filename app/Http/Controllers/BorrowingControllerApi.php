@@ -150,20 +150,38 @@ class BorrowingControllerApi extends Controller
 
     public function update(UpdateBorrowingRequest $request, $id): JsonResponse
     {
+        // Ambil data peminjaman beserta barang
         $borrowing = Borrowing::with('item')->findOrFail($id);
+
+        // Simpan status awal sebelum di-update
+        $originalStatus = $borrowing->approval_status;
+
+        // Update data peminjaman
         $borrowing->update($request->validated());
 
-        // Jika dikembalikan, tandai item tersedia lagi
+        // ✅ Jika status persetujuan berubah menjadi approved
+        if (
+            $originalStatus !== Borrowing::STATUS_APPROVED &&
+            $borrowing->approval_status === Borrowing::STATUS_APPROVED
+        ) {
+            if ($borrowing->item && $borrowing->item->is_available) {
+                $borrowing->item->is_available = false;
+                $borrowing->item->save();
+            }
+        }
+
+        // ✅ Jika dikembalikan, tandai item sebagai tersedia
         if ($request->has('is_returned') && $request->is_returned) {
-            if ($borrowing->item) {
+            if ($borrowing->item && !$borrowing->item->is_available) {
                 $borrowing->item->is_available = true;
                 $borrowing->item->save();
             }
         }
 
-        // ⬅️ Tambahkan ini agar user dan item terload untuk resource
+        // Tambahkan relasi user dan item agar response lebih lengkap
         $borrowing->load(['user', 'item']);
 
+        // Return data menggunakan BorrowingResource
         return response()->json(new BorrowingResource($borrowing));
     }
 
@@ -191,25 +209,73 @@ class BorrowingControllerApi extends Controller
             return response()->json(['message' => 'Barang ini sudah tersedia.'], 400);
         }
 
-        // 1. Update status item
-        $item->is_available = true;
-        $item->save();
-
-        // 2. Cari peminjaman terakhir yang belum dikembalikan
-        $borrowing = \App\Models\Borrowing::where('item_id', $item->id)
+        $borrowing = Borrowing::where('item_id', $item->id)
             ->where('is_returned', false)
             ->latest()
             ->first();
 
-        if ($borrowing) {
-            $borrowing->is_returned = true;
-            $borrowing->save();
+        if (!$borrowing) {
+            return response()->json(['message' => 'Peminjaman tidak ditemukan atau sudah dikembalikan.'], 404);
         }
+
+        // Optional: pastikan approval sudah diberikan sebelum dikembalikan
+        if ($borrowing->approval_status !== Borrowing::STATUS_APPROVED) {
+            return response()->json(['message' => 'Barang belum disetujui, tidak dapat dikembalikan.'], 400);
+        }
+
+        // Lakukan pengembalian
+        $borrowing->is_returned = true;
+        $borrowing->save();
+
+        $item->is_available = true;
+        $item->save();
 
         return response()->json([
             'message' => 'Barang berhasil dikembalikan.',
-            'data' => $item
+            'data' => [
+                'item' => [
+                    'name' => $item->name
+                ]
+            ]
         ]);
     }
 
+    public function approve($id): JsonResponse
+    {
+        $borrowing = Borrowing::with('item')->findOrFail($id);
+
+        if ($borrowing->approval_status !== 'pending') {
+            return response()->json(['message' => 'Peminjaman ini sudah diproses.'], 400);
+        }
+
+        $borrowing->approval_status = 'approved';
+        $borrowing->save();
+
+        if ($borrowing->item) {
+            $borrowing->item->is_available = false;
+            $borrowing->item->save();
+        }
+
+        return response()->json([
+            'message' => 'Peminjaman disetujui.',
+            'data' => new BorrowingResource($borrowing)
+        ]);
+    }
+
+    public function reject($id): JsonResponse
+    {
+        $borrowing = Borrowing::findOrFail($id);
+
+        if ($borrowing->approval_status !== 'pending') {
+            return response()->json(['message' => 'Peminjaman ini sudah diproses.'], 400);
+        }
+
+        $borrowing->approval_status = 'rejected';
+        $borrowing->save();
+
+        return response()->json([
+            'message' => 'Peminjaman ditolak.',
+            'data' => new BorrowingResource($borrowing)
+        ]);
+    }
 }

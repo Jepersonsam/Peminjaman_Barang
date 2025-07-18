@@ -13,6 +13,7 @@ use App\Http\Controllers\RoomControllerApi;
 use App\Http\Controllers\RoomLoanControllerApi;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\PublicBorrowingControllerApi;
+use App\Http\Controllers\WeeklyRoomLoanController;
 
 // Public routes (no authentication required)
 Route::post('/register', [RegisterControllerApi::class, 'register']);
@@ -94,7 +95,7 @@ Route::get('/users/by-code/{code}', [UserControllerApi::class, 'getByCode']);
 Route::post('/public/return-item', [BorrowingControllerApi::class, 'returnItem']);
 
 Route::get('rooms', [RoomControllerApi::class, 'index']);
-Route::post('rooms',[RoomControllerApi::class, 'store']);
+Route::post('rooms', [RoomControllerApi::class, 'store']);
 Route::get('rooms/{id}', [RoomControllerApi::class, 'show']);
 Route::put('rooms/{id}', [RoomControllerApi::class, 'update']);
 Route::delete('rooms/{id}', [RoomControllerApi::class, 'destroy']);
@@ -119,7 +120,13 @@ Route::get('/borrowings', [BorrowingControllerApi::class, 'PublicIndex']);
 
 Route::get('/users/by-nfc/{code_nfc}', [UserControllerApi::class, 'getByNFC']);
 
-Route::post('/borrowings/{id}/approve', [BorrowingControllerApi::class, 'approve']);
-Route::post('/borrowings/{id}/reject', [BorrowingControllerApi::class, 'reject']);
+Route::put('/borrowings/{id}/approve', [BorrowingControllerApi::class, 'approve']);
+Route::put('/borrowings/{id}/reject', [BorrowingControllerApi::class, 'reject']);
 
-
+Route::get('weekly-room-loans', [WeeklyRoomLoanController::class, 'index']);
+Route::get('/weekly-room-loans/by-room', [WeeklyRoomLoanController::class, 'getByRoom']);
+Route::post('weekly-room-loans', [WeeklyRoomLoanController::class, 'store']);
+Route::get('weekly-room-loans/{id}', [WeeklyRoomLoanController::class, 'show']);
+Route::put('weekly-room-loans/{id}', [WeeklyRoomLoanController::class, 'update']);
+Route::delete('weekly-room-loans/{id}', [WeeklyRoomLoanController::class, 'destroy']);
+Route::get('/weekly-room-loans/by-room', [WeeklyRoomLoanController::class, 'getByRoom']);

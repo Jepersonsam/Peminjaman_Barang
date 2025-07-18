@@ -19,10 +19,12 @@ class BorrowingResource extends JsonResource
                 'id' => $this->item->id,
                 'name' => $this->item->name,
                 'serial_code' => $this->item->serial_code,
+                'is_approval' => $this->item->is_approval,
             ],
             'borrow_date' => $this->borrow_date->format('Y-m-d'),
             'return_date' => optional($this->return_date)->format('Y-m-d'),
             'is_returned' => $this->is_returned,
+            'approval_status' => $this->approval_status,
         ];
     }
 }

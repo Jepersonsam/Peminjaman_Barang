@@ -18,7 +18,7 @@ class RoomControllerApi extends Controller
             'name' => 'required|string|max:100',
             'location' => 'nullable|string|max:100',
             'capacity' => 'nullable|integer',
-            'descriptiom' => 'nullable|string',
+            'description' => 'nullable|string',
             'is_active' => 'boolean',
         ]);
         $room = Room::create($validated);

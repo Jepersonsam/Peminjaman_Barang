@@ -18,7 +18,8 @@ class UpdateBorrowingRequest extends FormRequest
             'item_id' => 'sometimes|required|exists:items,id',
             'borrow_date' => 'sometimes|required|date',
             'return_date' => 'nullable|date',
-            'is_returned' => 'sometimes|boolean',
+            'is_returned' => 'boolean',
+            'approval_status' => 'sometimes|in:pending,approved,rejected',
         ];
     }
 }
