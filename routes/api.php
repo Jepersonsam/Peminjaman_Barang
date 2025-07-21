@@ -85,12 +85,12 @@ Route::middleware('auth:api')->group(function () {
 
 
 Route::get('/autocomplete-email', [PublicBorrowingControllerApi::class, 'autocompleteEmail']);
+Route::get('/borrowings/user/{id}', [PublicBorrowingControllerApi::class, 'userBorrowings']);
 Route::get('/room-loans/check-availability', [RoomLoanControllerApi::class, 'checkAvailability']);
 
 
 // Public route untuk peminjaman tanpa login
 Route::get('/public/items', [ItemControllerApi::class, 'publicIndex']);
-Route::get('/borrowings/user/{id}', [BorrowingControllerApi::class, 'userBorrowings']);
 Route::post('/public/borrowings', [PublicBorrowingControllerApi::class, 'publicStore']);
 Route::get('/users/by-code/{code}', [UserControllerApi::class, 'getByCode']);
 Route::post('/public/return-item', [BorrowingControllerApi::class, 'returnItem']);
@@ -122,6 +122,9 @@ Route::get('/validate-secret', [LocationController::class, 'validateSecret']);
 Route::get('/borrowings', [BorrowingControllerApi::class, 'PublicIndex']);
 
 Route::get('/users/by-nfc/{code_nfc}', [UserControllerApi::class, 'getByNFC']);
+Route::get('/public/borrowings/by-code/{code}', [PublicBorrowingControllerApi::class, 'userBorrowingsByCode']);
+Route::get('/public/borrowings/by-nfc/{code_nfc}', [PublicBorrowingControllerApi::class, 'userBorrowingsByNFC']);
+
 
 Route::put('/borrowings/{id}/approve', [BorrowingControllerApi::class, 'approve']);
 Route::put('/borrowings/{id}/reject', [BorrowingControllerApi::class, 'reject']);

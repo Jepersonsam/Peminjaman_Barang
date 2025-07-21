@@ -155,6 +155,42 @@ class RoomLoanControllerApi extends Controller
             ]);
         }
 
+        if ($request->status === 'rejected') {
+    $loan = $loan->fresh('room');
+
+    // Format tanggal
+    $startIso = \Carbon\Carbon::parse($loan->start_time)
+        ->setTimezone('Asia/Jakarta')
+        ->toIso8601String();
+    $endIso = \Carbon\Carbon::parse($loan->end_time)
+        ->setTimezone('Asia/Jakarta')
+        ->toIso8601String();
+
+    // Daftar email peserta
+    $attendees = collect($loan->emails)
+        ->filter()
+        ->map(fn($email) => ['email' => trim($email)])
+        ->values()
+        ->all();
+
+    // Panggil webhook n8n khusus rejected
+    \Illuminate\Support\Facades\Http::post(
+        'https://workflow.tiketux.id/webhook-test/ebb6bb6d-81bf-477b-a608-1e6367dd725f',
+        [
+            'borrower_name' => $loan->borrower_name,
+            'borrower_email' => $loan->emails,
+            'attendees'     => $attendees,
+            'purpose'       => $loan->purpose,
+            'room_name'     => $loan->room->name,
+            'start_time'    => $startIso,
+            'end_time'      => $endIso,
+            'status'        => 'rejected',
+            'message'       => 'Peminjaman ruangan Anda ditolak.'
+        ]
+    );
+}
+
+
 
         return response()->json($loan->fresh('room'));
     }

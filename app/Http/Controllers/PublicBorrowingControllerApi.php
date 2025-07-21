@@ -7,6 +7,7 @@ use App\Models\Item;
 use Illuminate\Http\Request;
 use App\Models\Borrowing;
 use App\Http\Resources\BorrowingResource;
+use Illuminate\Http\JsonResponse;
 
 class PublicBorrowingControllerApi extends Controller
 {
@@ -131,5 +132,44 @@ class PublicBorrowingControllerApi extends Controller
             ->toArray();
 
         return response()->json($emails);
+    }
+
+    public function userBorrowingsByCode($code): JsonResponse
+    {
+        $user = User::where('code', $code)->first();
+
+        if (!$user) {
+            return response()->json([
+                'message' => 'User tidak ditemukan.'
+            ], 404);
+        }
+
+        $borrowings = Borrowing::with(['user', 'item'])
+            ->where('users_id', $user->id)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json([
+            'user' => $user,
+            'data' => BorrowingResource::collection($borrowings)
+        ]);
+    }
+
+
+    public function userBorrowingsByNFC($code_nfc): JsonResponse
+    {
+        $user = User::where('code_nfc', $code_nfc)->first();
+        if (!$user) {
+            return response()->json(['message' => 'User tidak ditemukan.'], 404);
+        }
+
+        $borrowings = Borrowing::with(['user', 'item'])
+            ->where('users_id', $user->id)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json([
+            'data' => BorrowingResource::collection($borrowings)
+        ]);
     }
 }
