@@ -102,4 +102,13 @@ class UserControllerApi extends Controller
 
         return response()->json(['data' => $user]);
     }
+
+    public function getEmails()
+    {
+        $email = User::whereNotNull('email')
+            ->where('email', '!=', '')
+            ->pluck('email');
+
+        return response()->json($email);
+    }
 }

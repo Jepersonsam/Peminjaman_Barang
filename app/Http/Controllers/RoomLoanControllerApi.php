@@ -29,6 +29,7 @@ class RoomLoanControllerApi extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
+            'user_id' => 'required|exists:users,id',
             'room_id' => 'required|exists:rooms,id',
             'borrower_name' => 'required|string|max:100',
             'borrower_contact' => 'nullable|string|max:100',
@@ -184,5 +185,14 @@ class RoomLoanControllerApi extends Controller
             ->get();
 
         return response()->json($bookings);
+    }
+
+    public function getByUser($userId)
+    {
+        $borrowings = RoomLoan::with('room')
+            ->where('user_id', $userId)
+            ->get();
+
+        return response()->json($borrowings);
     }
 }

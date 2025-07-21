@@ -116,4 +116,20 @@ class PublicBorrowingControllerApi extends Controller
             'data' => $borrowed,
         ]);
     }
+
+    public function autocompleteEmail(Request $request)
+    {
+        $query = $request->get('query', '');
+
+        if (!$query) {
+            return response()->json([]);
+        }
+
+        $emails = User::where('email', 'LIKE', "%{$query}%")
+            ->take(10)
+            ->pluck('email')
+            ->toArray();
+
+        return response()->json($emails);
+    }
 }

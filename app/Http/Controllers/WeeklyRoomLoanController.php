@@ -85,8 +85,16 @@ class WeeklyRoomLoanController extends Controller
     public function destroy($id)
     {
         $loan = WeeklyRoomLoan::findOrFail($id);
+
+        // Hapus semua data di room_loans yang terkait dengan weekly room loan ini
+        RoomLoan::where('room_id', $loan->room_id)
+            ->where('start_time', $loan->start_time)
+            ->where('end_time', $loan->end_time)
+            ->delete();
+
         $loan->delete();
-        return response()->json(['message' => 'Deleted']);
+
+        return response()->json(['message' => 'Weekly room loan and related room loans deleted successfully']);
     }
 
     public function getByRoom(Request $request)

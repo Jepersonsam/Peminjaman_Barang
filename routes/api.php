@@ -84,12 +84,13 @@ Route::middleware('auth:api')->group(function () {
 });
 
 
-
+Route::get('/autocomplete-email', [PublicBorrowingControllerApi::class, 'autocompleteEmail']);
 Route::get('/room-loans/check-availability', [RoomLoanControllerApi::class, 'checkAvailability']);
 
 
 // Public route untuk peminjaman tanpa login
 Route::get('/public/items', [ItemControllerApi::class, 'publicIndex']);
+Route::get('/borrowings/user/{id}', [BorrowingControllerApi::class, 'userBorrowings']);
 Route::post('/public/borrowings', [PublicBorrowingControllerApi::class, 'publicStore']);
 Route::get('/users/by-code/{code}', [UserControllerApi::class, 'getByCode']);
 Route::post('/public/return-item', [BorrowingControllerApi::class, 'returnItem']);
@@ -101,10 +102,12 @@ Route::put('rooms/{id}', [RoomControllerApi::class, 'update']);
 Route::delete('rooms/{id}', [RoomControllerApi::class, 'destroy']);
 
 Route::get('room-loans', [RoomLoanControllerApi::class, 'index']);
+Route::get('room-loans/by-user/{userId}', [RoomLoanControllerApi::class, 'getByUser']);
 Route::post('room-loans', [RoomLoanControllerApi::class, 'store']);
 Route::get('room-loans/{id}', [RoomLoanControllerApi::class, 'show']);
 Route::put('room-loans/{id}', [RoomLoanControllerApi::class, 'update']);
 Route::delete('room-loans/{id}', [RoomLoanControllerApi::class, 'destroy']);
+
 
 
 
@@ -130,3 +133,4 @@ Route::get('weekly-room-loans/{id}', [WeeklyRoomLoanController::class, 'show']);
 Route::put('weekly-room-loans/{id}', [WeeklyRoomLoanController::class, 'update']);
 Route::delete('weekly-room-loans/{id}', [WeeklyRoomLoanController::class, 'destroy']);
 Route::get('/weekly-room-loans/by-room', [WeeklyRoomLoanController::class, 'getByRoom']);
+

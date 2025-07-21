@@ -10,6 +10,7 @@ class RoomLoan extends Model
     use HasFactory;
 
     protected $fillable = [
+        'user_id', // ✅ Tambahkan ini
         'room_id',
         'borrower_name',
         'borrower_contact',
@@ -27,5 +28,10 @@ class RoomLoan extends Model
     public function room()
     {
         return $this->belongsTo(Room::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 }

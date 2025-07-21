@@ -278,4 +278,16 @@ class BorrowingControllerApi extends Controller
             'data' => new BorrowingResource($borrowing)
         ]);
     }
+
+    public function userBorrowings($userId): JsonResponse
+    {
+        $borrowings = Borrowing::with(['user', 'item'])
+            ->where('users_id', $userId) // ✅ Ganti user_id -> users_id
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json([
+            'data' => BorrowingResource::collection($borrowings)
+        ]);
+    }
 }
