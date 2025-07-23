@@ -9,6 +9,11 @@ use App\Http\Resources\BorrowingResource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Models\Item;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+
+
+
 
 class BorrowingControllerApi extends Controller
 {
@@ -148,42 +153,67 @@ class BorrowingControllerApi extends Controller
         return response()->json(new BorrowingResource($borrowing));
     }
 
+
     public function update(UpdateBorrowingRequest $request, $id): JsonResponse
     {
-        // Ambil data peminjaman beserta barang
-        $borrowing = Borrowing::with('item')->findOrFail($id);
+        $borrowing = Borrowing::with(['item', 'user'])->findOrFail($id);
 
-        // Simpan status awal sebelum di-update
-        $originalStatus = $borrowing->approval_status;
+        $originalApprovalStatus = $borrowing->approval_status;
+        $originalIsReturned = $borrowing->is_returned;
 
-        // Update data peminjaman
         $borrowing->update($request->validated());
 
-        // ✅ Jika status persetujuan berubah menjadi approved
+        // === 1. Jika status menjadi APPROVED ===
         if (
-            $originalStatus !== Borrowing::STATUS_APPROVED &&
+            $originalApprovalStatus !== Borrowing::STATUS_APPROVED &&
             $borrowing->approval_status === Borrowing::STATUS_APPROVED
         ) {
+            // Tandai barang tidak tersedia
             if ($borrowing->item && $borrowing->item->is_available) {
                 $borrowing->item->is_available = false;
                 $borrowing->item->save();
             }
+
+            $this->sendWebhookNotification($borrowing, 'Peminjaman barang Anda telah disetujui.');
         }
 
-        // ✅ Jika dikembalikan, tandai item sebagai tersedia
-        if ($request->has('is_returned') && $request->is_returned) {
+        // === 2. Jika status menjadi REJECTED ===
+        if (
+            $originalApprovalStatus !== Borrowing::STATUS_REJECTED &&
+            $borrowing->approval_status === Borrowing::STATUS_REJECTED
+        ) {
+            $this->sendWebhookNotification($borrowing, 'Mohon maaf, permintaan peminjaman barang Anda telah ditolak.');
+        }
+
+        // === 3. Jika dikembalikan ===
+        if (!$originalIsReturned && $borrowing->is_returned) {
             if ($borrowing->item && !$borrowing->item->is_available) {
                 $borrowing->item->is_available = true;
                 $borrowing->item->save();
             }
         }
 
-        // Tambahkan relasi user dan item agar response lebih lengkap
         $borrowing->load(['user', 'item']);
 
-        // Return data menggunakan BorrowingResource
         return response()->json(new BorrowingResource($borrowing));
     }
+
+    private function sendWebhookNotification(Borrowing $borrowing, string $message): void
+    {
+        try {
+            Http::post('https://workflow.tiketux.id/webhook-test/3b6a443c-df0b-4dec-bad1-260f0cc389a7', [
+                'user_email'   => $borrowing->user->email,
+                'user_name'    => $borrowing->user->name,
+                'item_name'    => $borrowing->item->name,
+                'borrow_date'  => $borrowing->borrow_date,
+                'return_date'  => $borrowing->return_date,
+                'message'      => $message,
+            ]);
+        } catch (\Exception $e) {
+            Log::error("Gagal mengirim webhook ke n8n: " . $e->getMessage());
+        }
+    }
+
 
 
     public function destroy($id): JsonResponse
@@ -240,9 +270,10 @@ class BorrowingControllerApi extends Controller
         ]);
     }
 
+
     public function approve($id): JsonResponse
     {
-        $borrowing = Borrowing::with('item')->findOrFail($id);
+        $borrowing = Borrowing::with(['item', 'user'])->findOrFail($id);
 
         if ($borrowing->approval_status !== 'pending') {
             return response()->json(['message' => 'Peminjaman ini sudah diproses.'], 400);
@@ -256,11 +287,26 @@ class BorrowingControllerApi extends Controller
             $borrowing->item->save();
         }
 
+        // Kirim data ke n8n dengan Laravel Http Client
+        try {
+            Http::post('https://workflow.tiketux.id/webhook-test/3b6a443c-df0b-4dec-bad1-260f0cc389a7', [
+                'user_email'   => $borrowing->user->email,
+                'user_name'    => $borrowing->user->name,
+                'item_name'    => $borrowing->item->name,
+                'borrow_date'  => $borrowing->borrow_date,
+                'return_date'  => $borrowing->return_date,
+                'message'      => "Peminjaman barang Anda telah disetujui."
+            ]);
+        } catch (\Exception $e) {
+            // Jangan hentikan proses jika gagal kirim ke n8n
+        }
+
         return response()->json([
             'message' => 'Peminjaman disetujui.',
             'data' => new BorrowingResource($borrowing)
         ]);
     }
+
 
     public function reject($id): JsonResponse
     {
@@ -282,7 +328,7 @@ class BorrowingControllerApi extends Controller
     public function userBorrowings($userId): JsonResponse
     {
         $borrowings = Borrowing::with(['user', 'item'])
-            ->where('users_id', $userId) // ✅ Ganti user_id -> users_id
+            ->where('users_id', $userId)
             ->orderBy('created_at', 'desc')
             ->get();
 

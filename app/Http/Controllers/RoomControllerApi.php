@@ -4,44 +4,41 @@ namespace App\Http\Controllers;
 
 use App\Models\Room;
 use Illuminate\Http\Request;
+use App\Http\Requests\StoreRoomRequest;
+use App\Http\Requests\UpdateRoomRequest;
+use App\Http\Resources\RoomResource;
 
 class RoomControllerApi extends Controller
 {
     public function index()
     {
-        return response()->json(Room::all());
+        return RoomResource::collection(Room::all());
     }
 
-    public function store(Request $request)
+    public function store(StoreRoomRequest $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:100',
-            'location' => 'nullable|string|max:100',
-            'capacity' => 'nullable|integer',
-            'description' => 'nullable|string',
-            'is_active' => 'boolean',
-        ]);
-        $room = Room::create($validated);
-        return response()->json($room, 201);
+        $room = Room::create($request->validated());
+        return new RoomResource($room);
     }
 
     public function show($id)
     {
-        return response()->json(Room::findOrFail($id));
+        $room = Room::findOrFail($id);
+        return new RoomResource($room);
     }
 
-    public function update(Request $request, $id)
+    public function update(UpdateRoomRequest $request, $id)
     {
         $room = Room::findOrFail($id);
-        $room->update($request->all());
-        return response()->json($room);
+        $room->update($request->validated());
+        return new RoomResource($room);
     }
 
     public function destroy($id)
     {
         Room::findOrFail($id)->delete();
         return response()->json([
-            'message' => 'Room Deleted'
+            'message' => 'Room deleted successfully.'
         ]);
     }
 }
