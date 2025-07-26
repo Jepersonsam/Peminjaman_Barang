@@ -43,7 +43,8 @@ class WeeklyRoomLoanController extends Controller
                 RoomLoan::create([
                     'room_id' => $data['room_id'],
                     'borrower_name' => $data['borrower_name'],
-                    'borrow_contact' => $data['borrower_contact'],
+                    'borrower_contact' => $data['borrower_contact'],
+                    'emails' => $data['emails'] ?? [],     
                     'purpose' => $data['purpose'],
                     'start_time' => $current->format('Y-m-d') . ' ' . $data['start_time'],
                     'end_time' => $current->format('Y-m-d') . ' ' . $data['end_time'],

@@ -135,5 +135,5 @@ Route::post('weekly-room-loans', [WeeklyRoomLoanController::class, 'store']);
 Route::get('weekly-room-loans/{id}', [WeeklyRoomLoanController::class, 'show']);
 Route::put('weekly-room-loans/{id}', [WeeklyRoomLoanController::class, 'update']);
 Route::delete('weekly-room-loans/{id}', [WeeklyRoomLoanController::class, 'destroy']);
-Route::get('/weekly-room-loans/by-room', [WeeklyRoomLoanController::class, 'getByRoom']);
+
 
