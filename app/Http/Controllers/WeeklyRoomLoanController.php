@@ -44,11 +44,12 @@ class WeeklyRoomLoanController extends Controller
                     'room_id' => $data['room_id'],
                     'borrower_name' => $data['borrower_name'],
                     'borrower_contact' => $data['borrower_contact'],
-                    'emails' => $data['emails'] ?? [],     
+                    'emails' => $data['emails'] ?? [],
                     'purpose' => $data['purpose'],
                     'start_time' => $current->format('Y-m-d') . ' ' . $data['start_time'],
                     'end_time' => $current->format('Y-m-d') . ' ' . $data['end_time'],
-                    'status' => 'approved'
+                    'status' => 'approved',
+                    'weekly_room_loan_id' => $weeklyLoan->id,
                 ]);
             }
             $current->addDay();
@@ -85,18 +86,13 @@ class WeeklyRoomLoanController extends Controller
 
     public function destroy($id)
     {
-        $loan = WeeklyRoomLoan::findOrFail($id);
+        $weeklyRoomLoan = WeeklyRoomLoan::findOrFail($id);
 
-        // Hapus semua data di room_loans yang terkait dengan weekly room loan ini
-        RoomLoan::where('room_id', $loan->room_id)
-            ->where('start_time', $loan->start_time)
-            ->where('end_time', $loan->end_time)
-            ->delete();
-
-        $loan->delete();
+        $weeklyRoomLoan->delete(); // Ini akan otomatis menghapus RoomLoan melalui model (lihat langkah 2)
 
         return response()->json(['message' => 'Weekly room loan and related room loans deleted successfully']);
     }
+
 
     public function getByRoom(Request $request)
     {

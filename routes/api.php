@@ -14,7 +14,12 @@ use App\Http\Controllers\RoomLoanControllerApi;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\PublicBorrowingControllerApi;
 use App\Http\Controllers\WeeklyRoomLoanController;
+use App\Http\Controllers\Auth\ForgotPasswordController;
+use App\Http\Controllers\Auth\ResetPasswordController;
 
+
+Route::post('/forgot-password', [ForgotPasswordController::class, 'sendResetLinkEmail']);
+Route::post('/reset-password', [ResetPasswordController::class, 'reset']);
 // Public routes (no authentication required)
 Route::post('/register', [RegisterControllerApi::class, 'register']);
 Route::post('/login', [LoginControllerApi::class, 'login']);
@@ -43,7 +48,14 @@ Route::middleware('auth:api')->group(function () {
         Route::delete('/users/{id}', [UserControllerApi::class, 'destroy'])->middleware('can:delete-users');
     });
 
-
+    Route::middleware('can:manage weekly-room-loans')->group(function () {
+        Route::get('/weekly-room-loans', [WeeklyRoomLoanController::class, 'index'])->middleware('can:view-weekly-room-loans');
+        Route::get('/weekly-room-loans/by-room', [WeeklyRoomLoanController::class, 'getByRoom'])->middleware('can:view-weekly-room-loans');
+        Route::post('/weekly-room-loans', [WeeklyRoomLoanController::class, 'store'])->middleware('can:create-weekly-room-loans');
+        Route::get('/weekly-room-loans/{id}', [WeeklyRoomLoanController::class, 'show'])->middleware('can:view-weekly-room-loans');
+        Route::put('/weekly-room-loans/{id}', [WeeklyRoomLoanController::class, 'update'])->middleware('can:edit-weekly-room-loans');
+        Route::delete('/weekly-room-loans/{id}', [WeeklyRoomLoanController::class, 'destroy'])->middleware('can:delete-weekly-room-loans');
+    });
     // Permission Management Routes
     Route::middleware('can:manage permissions')->group(function () {
         Route::get('/permissions', [PermissionController::class, 'index'])->middleware('can:view-permissions');
@@ -128,12 +140,3 @@ Route::get('/public/borrowings/by-nfc/{code_nfc}', [PublicBorrowingControllerApi
 
 Route::put('/borrowings/{id}/approve', [BorrowingControllerApi::class, 'approve']);
 Route::put('/borrowings/{id}/reject', [BorrowingControllerApi::class, 'reject']);
-
-Route::get('weekly-room-loans', [WeeklyRoomLoanController::class, 'index']);
-Route::get('/weekly-room-loans/by-room', [WeeklyRoomLoanController::class, 'getByRoom']);
-Route::post('weekly-room-loans', [WeeklyRoomLoanController::class, 'store']);
-Route::get('weekly-room-loans/{id}', [WeeklyRoomLoanController::class, 'show']);
-Route::put('weekly-room-loans/{id}', [WeeklyRoomLoanController::class, 'update']);
-Route::delete('weekly-room-loans/{id}', [WeeklyRoomLoanController::class, 'destroy']);
-
-

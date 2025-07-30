@@ -18,7 +18,8 @@ class RoomLoan extends Model
         'start_time',
         'end_time',
         'emails',
-        'status'
+        'status',
+        'weekly_room_loan_id',
     ];
 
     protected $casts = [
@@ -33,5 +34,10 @@ class RoomLoan extends Model
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function weeklyRoomLoan()
+    {
+        return $this->belongsTo(WeeklyRoomLoan::class);
     }
 }
