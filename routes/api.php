@@ -140,3 +140,4 @@ Route::get('/public/borrowings/by-nfc/{code_nfc}', [PublicBorrowingControllerApi
 
 Route::put('/borrowings/{id}/approve', [BorrowingControllerApi::class, 'approve']);
 Route::put('/borrowings/{id}/reject', [BorrowingControllerApi::class, 'reject']);
+ 
