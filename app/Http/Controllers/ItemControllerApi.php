@@ -13,7 +13,7 @@ class ItemControllerApi extends Controller
 {
     public function index(): JsonResponse
     {
-        $items = Item::all();
+        $items = Item::with('category')->get();
         return response()->json([
             'data' => ItemResource::collection($items)
         ]);
@@ -42,7 +42,7 @@ class ItemControllerApi extends Controller
 
     public function show($id)
     {
-        $item = Item::findOrFail($id);
+        $item = Item::with('category')->findOrFail($id);
         return new ItemResource($item);
     }
 

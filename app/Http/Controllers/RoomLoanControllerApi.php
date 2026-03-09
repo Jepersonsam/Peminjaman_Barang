@@ -4,8 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\UpdateRoomLoanRequest;
 use App\Models\RoomLoan;
+use App\Notifications\RoomLoanStatusNotification;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 
 class RoomLoanControllerApi extends Controller
@@ -120,41 +121,20 @@ class RoomLoanControllerApi extends Controller
 
         $loan->update($request->all());
 
-        // === Webhook jika status berubah ke "approved" ===
+        // === Email Notifikasi jika status berubah ke "approved" ===
         if ($request->status === 'approved') {
-            $loan = $loan->fresh('room');
-            $startIso = Carbon::parse($loan->start_time)->setTimezone('Asia/Jakarta')->toIso8601String();
-            $endIso = Carbon::parse($loan->end_time)->setTimezone('Asia/Jakarta')->toIso8601String();
-            $attendees = collect($loan->emails)->filter()->map(fn($e) => ['email' => trim($e)])->values()->all();
-
-            Http::post('https://workflow.tiketux.id/webhook-test/09f03fce-c493-4ffc-927d-d5bfe7b05b91', [
-                'borrower_name' => $loan->borrower_name,
-                'attendees'     => $attendees,
-                'purpose'       => $loan->purpose,
-                'room_name'     => $loan->room->name,
-                'start_time'    => $startIso,
-                'end_time'      => $endIso,
-            ]);
+            $loan->load(['room', 'user']);
+            if ($loan->user) {
+                $loan->user->notify(new RoomLoanStatusNotification($loan, 'Peminjaman ruangan Anda telah disetujui.'));
+            }
         }
 
-        // === Webhook jika status berubah ke "rejected" ===
+        // === Email Notifikasi jika status berubah ke "rejected" ===
         if ($request->status === 'rejected') {
-            $loan = $loan->fresh('room');
-            $startIso = Carbon::parse($loan->start_time)->setTimezone('Asia/Jakarta')->toIso8601String();
-            $endIso = Carbon::parse($loan->end_time)->setTimezone('Asia/Jakarta')->toIso8601String();
-            $attendees = collect($loan->emails)->filter()->map(fn($e) => ['email' => trim($e)])->values()->all();
-
-            Http::post('https://workflow.tiketux.id:5678/webhook/09f03fce-c493-4ffc-927d-d5bfe7b05b91', [
-                'borrower_name'  => $loan->borrower_name,
-                'borrower_email' => $loan->emails,
-                'attendees'      => $attendees,
-                'purpose'        => $loan->purpose,
-                'room_name'      => $loan->room->name,
-                'start_time'     => $startIso,
-                'end_time'       => $endIso,
-                'status'         => 'rejected',
-                'message'        => 'Peminjaman ruangan Anda ditolak.',
-            ]);
+            $loan->load(['room', 'user']);
+            if ($loan->user) {
+                $loan->user->notify(new RoomLoanStatusNotification($loan, 'Mohon maaf, peminjaman ruangan Anda telah ditolak.'));
+            }
         }
 
         return response()->json($loan->fresh('room'));

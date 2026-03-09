@@ -12,7 +12,7 @@ class Item extends Model
     // Jika ingin mass assignment
     protected $fillable = [
         'name',
-        'code',
+        'category_id',
         'serial_code',
         'is_available',
         'is_active',
@@ -25,6 +25,14 @@ class Item extends Model
         'is_active' => 'boolean',
         'is_approval' => 'boolean',
     ];
+
+    /**
+     * Relasi ke Category (Many to One)
+     */
+    public function category()
+    {
+        return $this->belongsTo(Category::class);
+    }
 
     /**
      * Relasi ke Borrowing (One to Many)

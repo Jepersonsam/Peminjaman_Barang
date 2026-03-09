@@ -25,6 +25,7 @@ class UpdateItemRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:100'],
+            'category_id' => ['nullable', 'integer', 'exists:categories,id'],
             'serial_code' => ['required', 'string', 'max:50', 'unique:items,serial_code,' . $this->route('id')],
             'code' => ['nullable', 'string', 'max:50'],
             'is_available' => ['boolean'],

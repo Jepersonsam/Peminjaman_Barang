@@ -6,11 +6,13 @@ use App\Models\Borrowing;
 use App\Http\Requests\StoreBorrowingRequest;
 use App\Http\Requests\UpdateBorrowingRequest;
 use App\Http\Resources\BorrowingResource;
+use App\Notifications\ReturnReminderNotification;
+use App\Notifications\BorrowingStatusNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Models\Item;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 
 
 
@@ -174,7 +176,7 @@ class BorrowingControllerApi extends Controller
                 $borrowing->item->save();
             }
 
-            $this->sendWebhookNotification($borrowing, 'Peminjaman barang Anda telah disetujui.');
+            $this->sendEmailNotification($borrowing, 'Peminjaman barang Anda telah disetujui.');
         }
 
         // === 2. Jika status menjadi REJECTED ===
@@ -182,7 +184,7 @@ class BorrowingControllerApi extends Controller
             $originalApprovalStatus !== Borrowing::STATUS_REJECTED &&
             $borrowing->approval_status === Borrowing::STATUS_REJECTED
         ) {
-            $this->sendWebhookNotification($borrowing, 'Mohon maaf, permintaan peminjaman barang Anda telah ditolak.');
+            $this->sendEmailNotification($borrowing, 'Mohon maaf, permintaan peminjaman barang Anda telah ditolak.');
         }
 
         // === 3. Jika dikembalikan ===
@@ -198,19 +200,14 @@ class BorrowingControllerApi extends Controller
         return response()->json(new BorrowingResource($borrowing));
     }
 
-    private function sendWebhookNotification(Borrowing $borrowing, string $message): void
+    private function sendEmailNotification(Borrowing $borrowing, string $message): void
     {
         try {
-            Http::post('https://workflow.tiketux.id/webhook-test/3b6a443c-df0b-4dec-bad1-260f0cc389a7', [
-                'user_email'   => $borrowing->user->email,
-                'user_name'    => $borrowing->user->name,
-                'item_name'    => $borrowing->item->name,
-                'borrow_date'  => $borrowing->borrow_date,
-                'return_date'  => $borrowing->return_date,
-                'message'      => $message,
-            ]);
+            if ($borrowing->user && $borrowing->user->email) {
+                $borrowing->user->notify(new BorrowingStatusNotification($borrowing, $message));
+            }
         } catch (\Exception $e) {
-            Log::error("Gagal mengirim webhook ke n8n: " . $e->getMessage());
+            Log::error("Gagal mengirim email notifikasi: " . $e->getMessage());
         }
     }
 
@@ -287,20 +284,10 @@ class BorrowingControllerApi extends Controller
             $borrowing->item->save();
         }
 
-        // Kirim data ke n8n dengan Laravel Http Client
-        try {
-            Http::post('https://workflow.tiketux.id/webhook-test/3b6a443c-df0b-4dec-bad1-260f0cc389a7', [
-                'user_email'   => $borrowing->user->email,
-                'user_name'    => $borrowing->user->name,
-                'item_name'    => $borrowing->item->name,
-                'borrow_date'  => $borrowing->borrow_date,
-                'return_date'  => $borrowing->return_date,
-                'message'      => "Peminjaman barang Anda telah disetujui."
-            ]);
-        } catch (\Exception $e) {
-            // Jangan hentikan proses jika gagal kirim ke n8n
-        }
-
+        // Kirim email notifikasi
+        $this->sendEmailNotification($borrowing, "Peminjaman barang Anda telah disetujui.");
+ 
+        
         return response()->json([
             'message' => 'Peminjaman disetujui.',
             'data' => new BorrowingResource($borrowing)
@@ -319,6 +306,9 @@ class BorrowingControllerApi extends Controller
         $borrowing->approval_status = 'rejected';
         $borrowing->save();
 
+        // Kirim email notifikasi
+        $this->sendEmailNotification($borrowing, "Mohon maaf, permintaan peminjaman barang Anda telah ditolak.");
+
         return response()->json([
             'message' => 'Peminjaman ditolak.',
             'data' => new BorrowingResource($borrowing)
@@ -334,6 +324,143 @@ class BorrowingControllerApi extends Controller
 
         return response()->json([
             'data' => BorrowingResource::collection($borrowings)
+        ]);
+    }
+
+    /**
+     * Kirim notifikasi pengingat pengembalian untuk satu borrowing
+     */
+    public function sendReturnReminder($id): JsonResponse
+    {
+        $borrowing = Borrowing::with(['user', 'item'])->findOrFail($id);
+
+        // Validasi
+        if ($borrowing->is_returned) {
+            return response()->json([
+                'message' => 'Barang sudah dikembalikan, tidak perlu dikirim pengingat.'
+            ], 400);
+        }
+
+        if ($borrowing->approval_status !== Borrowing::STATUS_APPROVED && $borrowing->approval_status !== null) {
+            return response()->json([
+                'message' => 'Peminjaman belum disetujui, tidak dapat dikirim pengingat.'
+            ], 400);
+        }
+
+        if (!$borrowing->user || !$borrowing->user->email) {
+            return response()->json([
+                'message' => 'User atau email tidak ditemukan.'
+            ], 404);
+        }
+
+        try {
+            // Hitung hari tersisa (hari ini ke tanggal kembali)
+            // Positif jika masih ada hari tersisa, negatif jika sudah lewat
+            $today = Carbon::today();
+            $returnDate = Carbon::parse($borrowing->return_date)->startOfDay();
+            $daysRemaining = $today->diffInDays($returnDate, false);
+            
+            // Kirim notifikasi
+            $borrowing->user->notify(new ReturnReminderNotification($borrowing, $daysRemaining));
+
+            return response()->json([
+                'message' => 'Notifikasi pengingat berhasil dikirim.',
+                'data' => [
+                    'borrowing_id' => $borrowing->id,
+                    'user_email' => $borrowing->user->email,
+                    'item_name' => $borrowing->item->name,
+                    'return_date' => $borrowing->return_date,
+                    'days_remaining' => $daysRemaining,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error("Gagal mengirim notifikasi pengingat: " . $e->getMessage());
+            return response()->json([
+                'message' => 'Gagal mengirim notifikasi: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Kirim notifikasi pengingat untuk semua borrowing yang perlu diingatkan
+     */
+    public function sendBulkReturnReminders(Request $request): JsonResponse
+    {
+        $request->validate([
+            'days_before' => 'nullable|integer|min:0|max:30',
+            'include_overdue' => 'nullable|boolean',
+        ]);
+
+        $daysBefore = $request->input('days_before', 3);
+        $includeOverdue = $request->input('include_overdue', true);
+        
+        $today = Carbon::today();
+        $targetDate = $today->copy()->addDays($daysBefore);
+        
+        // Query untuk borrowing yang perlu dikirim pengingat
+        $query = Borrowing::with(['user', 'item'])
+            ->where('is_returned', false)
+            ->where(function ($q) {
+                $q->where('approval_status', Borrowing::STATUS_APPROVED)
+                  ->orWhereNull('approval_status');
+            })
+            ->whereDate('return_date', '<=', $targetDate);
+        
+        // Jika tidak include overdue, hanya yang belum lewat
+        if (!$includeOverdue) {
+            $query->whereDate('return_date', '>=', $today);
+        }
+        
+        $borrowings = $query->get();
+        
+        if ($borrowings->isEmpty()) {
+            return response()->json([
+                'message' => 'Tidak ada peminjaman yang perlu dikirim pengingat.',
+                'sent_count' => 0,
+                'failed_count' => 0,
+            ]);
+        }
+        
+        $sentCount = 0;
+        $failedCount = 0;
+        $failedItems = [];
+        
+        foreach ($borrowings as $borrowing) {
+            try {
+                // Pastikan user dan email ada
+                if (!$borrowing->user || !$borrowing->user->email) {
+                    $failedCount++;
+                    $failedItems[] = [
+                        'borrowing_id' => $borrowing->id,
+                        'reason' => 'User atau email tidak ditemukan'
+                    ];
+                    continue;
+                }
+                
+                // Hitung hari tersisa (hari ini ke tanggal kembali)
+                // Positif jika masih ada hari tersisa, negatif jika sudah lewat
+                $returnDate = Carbon::parse($borrowing->return_date)->startOfDay();
+                $daysRemaining = $today->diffInDays($returnDate, false);
+                
+                // Kirim notifikasi
+                $borrowing->user->notify(new ReturnReminderNotification($borrowing, $daysRemaining));
+                
+                $sentCount++;
+            } catch (\Exception $e) {
+                $failedCount++;
+                $failedItems[] = [
+                    'borrowing_id' => $borrowing->id,
+                    'reason' => $e->getMessage()
+                ];
+                Log::error("Gagal mengirim notifikasi untuk borrowing ID {$borrowing->id}: " . $e->getMessage());
+            }
+        }
+        
+        return response()->json([
+            'message' => "Notifikasi pengingat berhasil dikirim untuk {$sentCount} peminjaman.",
+            'sent_count' => $sentCount,
+            'failed_count' => $failedCount,
+            'failed_items' => $failedItems,
         ]);
     }
 }

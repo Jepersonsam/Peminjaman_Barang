@@ -28,8 +28,8 @@ class Room extends Model
         return $this->hasMany(RoomLoan::class);
     }
 
-    public function weeklyRoomLoans()
+    public function meetingSchedules()
     {
-        return $this->hasMany(WeeklyRoomLoan::class);
+        return $this->hasMany(MeetingSchedule::class);
     }
 }

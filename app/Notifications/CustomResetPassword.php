@@ -22,9 +22,7 @@ class CustomResetPassword extends Notification
     public function toMail($notifiable)
     {
         return (new MailMessage)
-            ->subject('Reset Password')
-            ->line('Klik tombol di bawah untuk atur ulang password Anda:')
-            ->action('Reset Password', $this->url)
-            ->line('Abaikan jika Anda tidak meminta reset.');
+            ->subject('Reset Password - ' . config('app.name'))
+            ->view('emails.reset_password', ['url' => $this->url]);
     }
 }

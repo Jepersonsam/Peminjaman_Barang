@@ -25,6 +25,7 @@ class StoreItemRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:100'],
+            'category_id' => ['nullable', 'integer', 'exists:categories,id'],
             'serial_code' => ['required', 'string', 'max:50', 'unique:items,serial_code'],
             'code' => ['nullable', 'string', 'max:50'],
             'is_available' => ['boolean'],

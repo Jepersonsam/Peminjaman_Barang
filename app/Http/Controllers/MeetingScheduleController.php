@@ -2,17 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\WeeklyRoomLoan;
+use App\Models\MeetingSchedule;
 use App\Models\RoomLoan;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
-class WeeklyRoomLoanController extends Controller
+class MeetingScheduleController extends Controller
 {
     public function index()
     {
         return response()->json([
-            'data' => WeeklyRoomLoan::with('room')->get()
+            'data' => MeetingSchedule::with('room')->get()
         ]);
     }
 
@@ -32,7 +32,7 @@ class WeeklyRoomLoanController extends Controller
         ]);
 
         $data['status'] = 'approved'; // Default status
-        $weeklyLoan = WeeklyRoomLoan::create($data);
+        $meetingSchedule = MeetingSchedule::create($data);
 
         // Generate jadwal ke table room_loans
         $current = Carbon::parse($data['start_date']);
@@ -49,23 +49,23 @@ class WeeklyRoomLoanController extends Controller
                     'start_time' => $current->format('Y-m-d') . ' ' . $data['start_time'],
                     'end_time' => $current->format('Y-m-d') . ' ' . $data['end_time'],
                     'status' => 'approved',
-                    'weekly_room_loan_id' => $weeklyLoan->id,
+                    'meeting_schedule_id' => $meetingSchedule->id,
                 ]);
             }
             $current->addDay();
         }
 
-        return response()->json(['message' => 'Created', 'data' => $weeklyLoan]);
+        return response()->json(['message' => 'Created', 'data' => $meetingSchedule]);
     }
 
     public function show($id)
     {
-        return WeeklyRoomLoan::with('room')->findOrFail($id);
+        return MeetingSchedule::with('room')->findOrFail($id);
     }
 
     public function update(Request $request, $id)
     {
-        $loan = WeeklyRoomLoan::findOrFail($id);
+        $meetingSchedule = MeetingSchedule::findOrFail($id);
 
         $data = $request->validate([
             'room_id' => 'sometimes|exists:rooms,id',
@@ -80,17 +80,17 @@ class WeeklyRoomLoanController extends Controller
             'emails' => 'nullable|array',
         ]);
 
-        $loan->update($data);
-        return response()->json(['message' => 'Updated', 'data' => $loan]);
+        $meetingSchedule->update($data);
+        return response()->json(['message' => 'Updated', 'data' => $meetingSchedule]);
     }
 
     public function destroy($id)
     {
-        $weeklyRoomLoan = WeeklyRoomLoan::findOrFail($id);
+        $meetingSchedule = MeetingSchedule::findOrFail($id);
 
-        $weeklyRoomLoan->delete(); // Ini akan otomatis menghapus RoomLoan melalui model (lihat langkah 2)
+        $meetingSchedule->delete(); // Ini akan otomatis menghapus RoomLoan melalui model
 
-        return response()->json(['message' => 'Weekly room loan and related room loans deleted successfully']);
+        return response()->json(['message' => 'Meeting schedule and related room loans deleted successfully']);
     }
 
 
@@ -100,8 +100,8 @@ class WeeklyRoomLoanController extends Controller
             'room_id' => 'required|exists:rooms,id',
         ]);
 
-        $loans = WeeklyRoomLoan::where('room_id', $request->room_id)->get();
+        $schedules = MeetingSchedule::where('room_id', $request->room_id)->get();
 
-        return response()->json($loans);
+        return response()->json($schedules);
     }
 }

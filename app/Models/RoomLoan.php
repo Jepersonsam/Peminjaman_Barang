@@ -19,7 +19,7 @@ class RoomLoan extends Model
         'end_time',
         'emails',
         'status',
-        'weekly_room_loan_id',
+        'meeting_schedule_id',
     ];
 
     protected $casts = [
@@ -36,8 +36,8 @@ class RoomLoan extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    public function weeklyRoomLoan()
+    public function meetingSchedule()
     {
-        return $this->belongsTo(WeeklyRoomLoan::class);
+        return $this->belongsTo(MeetingSchedule::class);
     }
 }

@@ -12,14 +12,16 @@ use App\Http\Controllers\BorrowingControllerApi;
 use App\Http\Controllers\RoomControllerApi;
 use App\Http\Controllers\RoomLoanControllerApi;
 use App\Http\Controllers\LocationController;
+use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\PublicBorrowingControllerApi;
-use App\Http\Controllers\WeeklyRoomLoanController;
+use App\Http\Controllers\MeetingScheduleController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 
 
 Route::post('/forgot-password', [ForgotPasswordController::class, 'sendResetLinkEmail']);
 Route::post('/reset-password', [ResetPasswordController::class, 'reset']);
+Route::get('/validate-reset-token', [ResetPasswordController::class, 'validateToken']);
 // Public routes (no authentication required)
 Route::post('/register', [RegisterControllerApi::class, 'register']);
 Route::post('/login', [LoginControllerApi::class, 'login']);
@@ -48,13 +50,13 @@ Route::middleware('auth:api')->group(function () {
         Route::delete('/users/{id}', [UserControllerApi::class, 'destroy'])->middleware('can:delete-users');
     });
 
-    Route::middleware('can:manage weekly-room-loans')->group(function () {
-        Route::get('/weekly-room-loans', [WeeklyRoomLoanController::class, 'index'])->middleware('can:view-weekly-room-loans');
-        Route::get('/weekly-room-loans/by-room', [WeeklyRoomLoanController::class, 'getByRoom'])->middleware('can:view-weekly-room-loans');
-        Route::post('/weekly-room-loans', [WeeklyRoomLoanController::class, 'store'])->middleware('can:create-weekly-room-loans');
-        Route::get('/weekly-room-loans/{id}', [WeeklyRoomLoanController::class, 'show'])->middleware('can:view-weekly-room-loans');
-        Route::put('/weekly-room-loans/{id}', [WeeklyRoomLoanController::class, 'update'])->middleware('can:edit-weekly-room-loans');
-        Route::delete('/weekly-room-loans/{id}', [WeeklyRoomLoanController::class, 'destroy'])->middleware('can:delete-weekly-room-loans');
+    Route::middleware('can:manage meeting-schedules')->group(function () {
+        Route::get('/meeting-schedules', [MeetingScheduleController::class, 'index'])->middleware('can:view-meeting-schedules');
+        Route::get('/meeting-schedules/by-room', [MeetingScheduleController::class, 'getByRoom'])->middleware('can:view-meeting-schedules');
+        Route::post('/meeting-schedules', [MeetingScheduleController::class, 'store'])->middleware('can:create-meeting-schedules');
+        Route::get('/meeting-schedules/{id}', [MeetingScheduleController::class, 'show'])->middleware('can:view-meeting-schedules');
+        Route::put('/meeting-schedules/{id}', [MeetingScheduleController::class, 'update'])->middleware('can:edit-meeting-schedules');
+        Route::delete('/meeting-schedules/{id}', [MeetingScheduleController::class, 'destroy'])->middleware('can:delete-meeting-schedules');
     });
     // Permission Management Routes
     Route::middleware('can:manage permissions')->group(function () {
@@ -92,6 +94,19 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/borrowings/{id}', [BorrowingControllerApi::class, 'show'])->middleware('can:view-borrowing');
         Route::put('/borrowings/{id}', [BorrowingControllerApi::class, 'update'])->middleware('can:edit-borrowing');
         Route::delete('/borrowings/{id}', [BorrowingControllerApi::class, 'destroy'])->middleware('can:delete-borrowing');
+        Route::post('/borrowings/{id}/send-reminder', [BorrowingControllerApi::class, 'sendReturnReminder'])->middleware('can:edit-borrowing');
+        Route::post('/borrowings/{id}/send-return-reminder', [BorrowingControllerApi::class, 'sendReturnReminder'])->middleware('can:edit-borrowing');
+        Route::post('/borrowings/send-bulk-reminders', [BorrowingControllerApi::class, 'sendBulkReturnReminders'])->middleware('can:edit-borrowing');
+    });
+
+    // Category Management Routes
+    Route::middleware('can:manage items')->group(function () {
+        Route::get('/categories', [CategoryController::class, 'index'])->middleware('can:view-items');
+        Route::post('/categories', [CategoryController::class, 'store'])->middleware('can:create-items');
+        Route::get('/categories/{id}', [CategoryController::class, 'show'])->middleware('can:view-items');
+        Route::put('/categories/{id}', [CategoryController::class, 'update'])->middleware('can:edit-items');
+        Route::delete('/categories/{id}', [CategoryController::class, 'destroy'])->middleware('can:delete-items');
+        Route::get('/categories/{id}/items', [CategoryController::class, 'getItemsByCategory'])->middleware('can:view-items');
     });
 });
 
@@ -130,6 +145,10 @@ Route::get('/locations/{id}', [LocationController::class, 'show']);
 Route::delete('/locations/{id}', [LocationController::class, 'destroy']);
 
 Route::get('/validate-secret', [LocationController::class, 'validateSecret']);
+
+// Public Category Routes
+Route::get('/public/categories', [CategoryController::class, 'index']);
+Route::get('/public/categories/{id}/items', [CategoryController::class, 'getItemsByCategory']);
 
 Route::get('/borrowings', [BorrowingControllerApi::class, 'PublicIndex']);
 

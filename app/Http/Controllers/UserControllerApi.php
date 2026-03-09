@@ -22,9 +22,9 @@ class UserControllerApi extends Controller
         $user = User::create([
             'name'     => $request->name,
             'email'    => $request->email,
-            'phone'    => $request->phone, // 🟢 Tambah phone
+            'phone'    => $request->phone,
             'code'     => $request->code,
-            'code_nfc' => $request->code_nfc, // 🟢 Tambah code_nfc
+            'code_nfc' => $request->code_nfc,
             'password' => Hash::make($request->password),
         ]);
 
@@ -63,8 +63,8 @@ class UserControllerApi extends Controller
         $user->update([
             'name'  => $request->name,
             'email' => $request->email,
-            'phone' => $request->phone, // 🟢 Tambah phone
-            'code_nfc' => $request->code_nfc, // 🟢 Tambah code_nfc
+            'phone' => $request->phone, 
+            'code_nfc' => $request->code_nfc, 
             'code'  => $request->code,
         ]);
 

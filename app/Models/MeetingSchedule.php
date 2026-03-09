@@ -4,8 +4,10 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class WeeklyRoomLoan extends Model
+class MeetingSchedule extends Model
 {
+    protected $table = 'meeting_schedules';
+
     protected $fillable = [
         'user_id',
         'room_id',
@@ -37,8 +39,8 @@ class WeeklyRoomLoan extends Model
 
     protected static function booted()
     {
-        static::deleting(function ($weeklyRoomLoan) {
-            $weeklyRoomLoan->roomLoans()->delete();
+        static::deleting(function ($meetingSchedule) {
+            $meetingSchedule->roomLoans()->delete();
         });
     }
 }

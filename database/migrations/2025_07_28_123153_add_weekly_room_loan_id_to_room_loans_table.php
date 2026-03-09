@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('room_loans', function (Blueprint $table) {
-            $table->foreignId('weekly_room_loan_id')->nullable()
-                ->constrained('weekly_room_loans')
+            $table->foreignId('meeting_schedule_id')->nullable()
+                ->constrained('meeting_schedules')
                 ->onDelete('cascade');
         });
     }
@@ -24,8 +24,8 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('room_loans', function (Blueprint $table) {
-            $table->dropForeign(['weekly_room_loan_id']);
-            $table->dropColumn('weekly_room_loan_id');
+            $table->dropForeign(['meeting_schedule_id']);
+            $table->dropColumn('meeting_schedule_id');
         });
     }
 };
