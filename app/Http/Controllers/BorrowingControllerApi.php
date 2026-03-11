@@ -176,7 +176,17 @@ class BorrowingControllerApi extends Controller
                 $borrowing->item->save();
             }
 
-            $this->sendEmailNotification($borrowing, 'Peminjaman barang Anda telah disetujui.');
+            // Kirim email di background agar response tidak lambat
+            $borrowingForEmail = $borrowing;
+            dispatch(function () use ($borrowingForEmail) {
+                try {
+                    if ($borrowingForEmail->user && $borrowingForEmail->user->email) {
+                        $borrowingForEmail->user->notify(new BorrowingStatusNotification($borrowingForEmail, 'Peminjaman barang Anda telah disetujui.'));
+                    }
+                } catch (\Exception $e) {
+                    Log::error('Gagal mengirim email notifikasi approved: ' . $e->getMessage());
+                }
+            })->afterResponse();
         }
 
         // === 2. Jika status menjadi REJECTED ===
@@ -184,7 +194,17 @@ class BorrowingControllerApi extends Controller
             $originalApprovalStatus !== Borrowing::STATUS_REJECTED &&
             $borrowing->approval_status === Borrowing::STATUS_REJECTED
         ) {
-            $this->sendEmailNotification($borrowing, 'Mohon maaf, permintaan peminjaman barang Anda telah ditolak.');
+            // Kirim email di background agar response tidak lambat
+            $borrowingForEmail = $borrowing;
+            dispatch(function () use ($borrowingForEmail) {
+                try {
+                    if ($borrowingForEmail->user && $borrowingForEmail->user->email) {
+                        $borrowingForEmail->user->notify(new BorrowingStatusNotification($borrowingForEmail, 'Mohon maaf, permintaan peminjaman barang Anda telah ditolak.'));
+                    }
+                } catch (\Exception $e) {
+                    Log::error('Gagal mengirim email notifikasi rejected: ' . $e->getMessage());
+                }
+            })->afterResponse();
         }
 
         // === 3. Jika dikembalikan ===
@@ -224,6 +244,7 @@ class BorrowingControllerApi extends Controller
     {
         $request->validate([
             'serial_code' => 'required|string',
+            'user_code'   => 'required|string|exists:users,code',
         ]);
 
         $item = Item::where('serial_code', $request->serial_code)->first();
@@ -236,7 +257,8 @@ class BorrowingControllerApi extends Controller
             return response()->json(['message' => 'Barang ini sudah tersedia.'], 400);
         }
 
-        $borrowing = Borrowing::where('item_id', $item->id)
+        $borrowing = Borrowing::with('user')
+            ->where('item_id', $item->id)
             ->where('is_returned', false)
             ->latest()
             ->first();
@@ -245,7 +267,14 @@ class BorrowingControllerApi extends Controller
             return response()->json(['message' => 'Peminjaman tidak ditemukan atau sudah dikembalikan.'], 404);
         }
 
-        // Optional: pastikan approval sudah diberikan sebelum dikembalikan
+        // Validasi: hanya peminjam asli yang boleh mengembalikan
+        if (!$borrowing->user || $borrowing->user->code !== $request->user_code) {
+            return response()->json([
+                'message' => 'Anda bukan peminjam barang ini. Hanya peminjam yang dapat mengembalikan.'
+            ], 403);
+        }
+
+        // Pastikan approval sudah diberikan sebelum dikembalikan
         if ($borrowing->approval_status !== Borrowing::STATUS_APPROVED) {
             return response()->json(['message' => 'Barang belum disetujui, tidak dapat dikembalikan.'], 400);
         }
@@ -284,10 +313,18 @@ class BorrowingControllerApi extends Controller
             $borrowing->item->save();
         }
 
-        // Kirim email notifikasi
-        $this->sendEmailNotification($borrowing, "Peminjaman barang Anda telah disetujui.");
- 
-        
+        // Kirim email di background agar response tidak lambat
+        $borrowingForEmail = $borrowing;
+        dispatch(function () use ($borrowingForEmail) {
+            try {
+                if ($borrowingForEmail->user && $borrowingForEmail->user->email) {
+                    $borrowingForEmail->user->notify(new BorrowingStatusNotification($borrowingForEmail, 'Peminjaman barang Anda telah disetujui.'));
+                }
+            } catch (\Exception $e) {
+                Log::error('Gagal mengirim email notifikasi approve: ' . $e->getMessage());
+            }
+        })->afterResponse();
+
         return response()->json([
             'message' => 'Peminjaman disetujui.',
             'data' => new BorrowingResource($borrowing)
@@ -306,8 +343,17 @@ class BorrowingControllerApi extends Controller
         $borrowing->approval_status = 'rejected';
         $borrowing->save();
 
-        // Kirim email notifikasi
-        $this->sendEmailNotification($borrowing, "Mohon maaf, permintaan peminjaman barang Anda telah ditolak.");
+        // Kirim email di background agar response tidak lambat
+        $borrowingForEmail = $borrowing;
+        dispatch(function () use ($borrowingForEmail) {
+            try {
+                if ($borrowingForEmail->user && $borrowingForEmail->user->email) {
+                    $borrowingForEmail->user->notify(new BorrowingStatusNotification($borrowingForEmail, 'Mohon maaf, permintaan peminjaman barang Anda telah ditolak.'));
+                }
+            } catch (\Exception $e) {
+                Log::error('Gagal mengirim email notifikasi reject: ' . $e->getMessage());
+            }
+        })->afterResponse();
 
         return response()->json([
             'message' => 'Peminjaman ditolak.',
